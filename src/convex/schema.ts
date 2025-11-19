@@ -2,7 +2,6 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { Infer, v } from "convex/values";
 
-// default user roles. can add / remove based on the project as needed
 export const ROLES = {
   ADMIN: "admin",
   USER: "user",
@@ -18,26 +17,50 @@ export type Role = Infer<typeof roleValidator>;
 
 const schema = defineSchema(
   {
-    // default auth tables using convex auth.
-    ...authTables, // do not remove or modify
+    ...authTables,
 
-    // the users table is the default users table that is brought in by the authTables
     users: defineTable({
-      name: v.optional(v.string()), // name of the user. do not remove
-      image: v.optional(v.string()), // image of the user. do not remove
-      email: v.optional(v.string()), // email of the user. do not remove
-      emailVerificationTime: v.optional(v.number()), // email verification time. do not remove
-      isAnonymous: v.optional(v.boolean()), // is the user anonymous. do not remove
+      name: v.optional(v.string()),
+      image: v.optional(v.string()),
+      email: v.optional(v.string()),
+      emailVerificationTime: v.optional(v.number()),
+      isAnonymous: v.optional(v.boolean()),
+      role: v.optional(roleValidator),
+    }).index("email", ["email"]),
 
-      role: v.optional(roleValidator), // role of the user. do not remove
-    }).index("email", ["email"]), // index for the email. do not remove or modify
+    devices: defineTable({
+      name: v.string(),
+      type: v.string(),
+      ipAddress: v.string(),
+      location: v.string(),
+      protocol: v.string(),
+      status: v.union(v.literal("online"), v.literal("offline"), v.literal("warning")),
+      lastSeen: v.number(),
+      uptime: v.number(),
+      cpuUsage: v.number(),
+      memoryUsage: v.number(),
+      networkTraffic: v.number(),
+    }),
 
-    // add other tables here
+    alerts: defineTable({
+      deviceId: v.id("devices"),
+      deviceName: v.string(),
+      severity: v.union(v.literal("critical"), v.literal("warning"), v.literal("info")),
+      message: v.string(),
+      type: v.string(),
+      status: v.union(v.literal("active"), v.literal("acknowledged"), v.literal("resolved")),
+      acknowledgedBy: v.union(v.string(), v.null()),
+      resolvedAt: v.union(v.number(), v.null()),
+    }),
 
-    // tableName: defineTable({
-    //   ...
-    //   // table fields
-    // }).index("by_field", ["field"])
+    metrics: defineTable({
+      deviceId: v.id("devices"),
+      cpuUsage: v.number(),
+      memoryUsage: v.number(),
+      networkTraffic: v.number(),
+      uptime: v.number(),
+      timestamp: v.number(),
+    }).index("by_device", ["deviceId"]),
   },
   {
     schemaValidation: false,
